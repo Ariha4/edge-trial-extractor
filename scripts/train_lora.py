@@ -56,7 +56,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.base_model)
     # Load in float32 and let fp16 mixed precision handle speed. Loading the base
     # model directly in fp16 makes the optimizer fail on a T4.
-    model = AutoModelForCausalLM.from_pretrained(args.base_model, torch_dtype=torch.float32)
+    model = AutoModelForCausalLM.from_pretrained(args.base_model, dtype=torch.float32)
 
     train_dataset = Dataset.from_list(load_split(args.train))
     val_dataset = Dataset.from_list(load_split(args.val))
@@ -77,7 +77,7 @@ def main():
         gradient_accumulation_steps=2,
         learning_rate=2e-4,
         lr_scheduler_type="cosine",
-        warmup_ratio=0.03,
+        warmup_steps=10,  # about 3% of ~310 total steps
         logging_steps=10,
         eval_strategy="steps",
         eval_steps=50,
