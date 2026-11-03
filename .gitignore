@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+data/raw_studies.jsonl
+models/
+checkpoints/
+results/*.json
+.DS_Store

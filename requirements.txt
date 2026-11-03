@@ -1,0 +1,6 @@
+# Mac: dataset building, evaluation, quantized inference
+torch
+transformers>=4.45
+llama-cpp-python
+psutil
+pytest
