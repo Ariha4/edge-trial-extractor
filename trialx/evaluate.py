@@ -299,7 +299,7 @@ def run(args, runner=None):
 
     os.makedirs(args.results_dir, exist_ok=True)
     details = {"metrics": metrics, "run": run_info, "outputs": []}
-    for example, raw_output in zip(examples, raw_outputs):
+    for example, raw_output in zip(examples, raw_outputs, strict=True):
         details["outputs"].append({"nct_id": example["nct_id"], "output": raw_output, "labels": example["labels"]})
     with open(os.path.join(args.results_dir, f"{args.run_name}.json"), "w", encoding="utf-8") as out_file:
         json.dump(details, out_file, indent=2, ensure_ascii=False)
