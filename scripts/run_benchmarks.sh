@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run the full benchmark grid on your Mac. Each run is its own process so peak
-# memory is measured per model. Results land in results/summary.csv.
+# memory is measured per model. Each run replaces its own row in
+# results/summary.csv, so rerunning the grid never leaves duplicate rows.
 #
 # Usage: bash scripts/run_benchmarks.sh [limit]
 #   limit = number of test examples (default 0 = all). Try 20 first as a smoke test.
@@ -8,8 +9,6 @@ set -euo pipefail
 
 LIMIT="${1:-0}"
 BASE_MODEL="Qwen/Qwen2.5-0.5B-Instruct"
-
-rm -f results/summary.csv
 
 # 1. Base model, no fine-tuning: the zero-shot baseline
 python -m trialx.evaluate --run-name base_fp16 --backend hf --model "$BASE_MODEL" \
@@ -25,4 +24,4 @@ python -m trialx.evaluate --run-name ft_gguf_q8 --backend gguf --model models/ft
 python -m trialx.evaluate --run-name ft_gguf_q4 --backend gguf --model models/ft-q4_k_m.gguf --limit "$LIMIT"
 
 echo
-column -s, -t < results/summary.csv
+python -m trialx.report   # prints the README table and writes results/summary.md

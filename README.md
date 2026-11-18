@@ -26,7 +26,8 @@ ClinicalTrials.gov API ──> raw_studies.jsonl ──> train / val / test spli
 
 ## Results
 
-Filled in from `results/summary.csv` after running the benchmarks.
+Filled in from `results/summary.csv` after running the benchmarks: `python -m trialx.report`
+prints this table straight from the CSV so no number is copied by hand.
 
 | Run | Precision | Overall | Conditions F1 | Interventions F1 | s / example | tokens/s | Peak RAM (MB) | Size (MB) |
 |---|---|---|---|---|---|---|---|---|
@@ -70,7 +71,12 @@ bash scripts/quantize.sh models/ft-merged ~/llama.cpp
 ```bash
 bash scripts/run_benchmarks.sh 20   # smoke test on 20 examples
 bash scripts/run_benchmarks.sh      # full test set
+python -m trialx.report             # re-render the results table at any time
 ```
+Each run writes `results/<run-name>.json` with the raw outputs plus what is needed to
+reproduce it: git commit, SHA-256 of the test file, example count, warmup, threads, and
+library versions. One untimed warmup generation runs before timing (`--warmup`) so
+first-call setup is not counted as latency.
 
 ## Design notes
 
@@ -82,6 +88,8 @@ bash scripts/run_benchmarks.sh      # full test set
   prediction, not skipped, so broken outputs lower the score instead of hiding.
 - **Loss on the answer only.** Training uses prompt/completion pairs, so the model is
   trained to produce the JSON, not to reproduce the trial text.
+- **Comparable runs.** Rerunning a configuration replaces its row in `summary.csv`, and the
+  report warns when rows were scored on different numbers of test examples.
 - **Same prompt everywhere.** `trialx/prompts.py` is shared by training and evaluation.
 
 ## Stretch goals

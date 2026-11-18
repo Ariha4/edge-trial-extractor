@@ -241,12 +241,30 @@ def run_metadata(args):
 
 
 def write_summary_row(summary_path, row):
-    write_header = not os.path.exists(summary_path)
-    with open(summary_path, "a", newline="", encoding="utf-8") as summary_file:
-        writer = csv.DictWriter(summary_file, fieldnames=SUMMARY_COLUMNS, extrasaction="ignore")
-        if write_header:
-            writer.writeheader()
-        writer.writerow(row)
+    """Insert this run's row, replacing any earlier row with the same run_name.
+
+    Rerunning one configuration (say, after a smoke test with --limit 20) updates its row in place
+    instead of appending a duplicate that a reader could mistake for the real result. The file is
+    rewritten through a temp file so an interrupted write cannot truncate earlier results.
+    """
+    rows = []
+    if os.path.exists(summary_path):
+        with open(summary_path, newline="", encoding="utf-8") as summary_file:
+            rows = list(csv.DictReader(summary_file))
+    new_row = {column: row.get(column, "") for column in SUMMARY_COLUMNS}
+    for index, existing in enumerate(rows):
+        if existing.get("run_name") == new_row["run_name"]:
+            rows[index] = new_row
+            break
+    else:
+        rows.append(new_row)
+
+    temp_path = summary_path + ".tmp"
+    with open(temp_path, "w", newline="", encoding="utf-8") as summary_file:
+        writer = csv.DictWriter(summary_file, fieldnames=SUMMARY_COLUMNS, extrasaction="ignore", restval="")
+        writer.writeheader()
+        writer.writerows(rows)
+    os.replace(temp_path, summary_path)
 
 
 def load_runner(args):
