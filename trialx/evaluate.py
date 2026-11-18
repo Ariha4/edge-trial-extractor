@@ -27,19 +27,56 @@ import resource
 import statistics
 import time
 
+from trialx.build_dataset import VALID_STUDY_TYPES
 from trialx.prompts import build_messages
-from trialx.scoring import score
+from trialx.scoring import LIST_FIELDS, score
 
 MAX_NEW_TOKENS = 200
 
 
-def load_examples(path, limit):
+class DataError(ValueError):
+    """A test example is malformed. Raised before any model is loaded."""
+
+
+def validate_example(example, where):
+    """Check one example has the shape scoring expects, so a bad line fails fast with its location."""
+    if not isinstance(example, dict):
+        raise DataError(f"{where}: expected a JSON object, got {type(example).__name__}")
+    for key in ("nct_id", "text"):
+        if not isinstance(example.get(key), str) or not example[key].strip():
+            raise DataError(f"{where}: '{key}' must be a non-empty string")
+    labels = example.get("labels")
+    if not isinstance(labels, dict):
+        raise DataError(f"{where}: 'labels' must be an object")
+    if labels.get("study_type") not in VALID_STUDY_TYPES:
+        raise DataError(f"{where}: labels.study_type must be one of {sorted(VALID_STUDY_TYPES)}, "
+                        f"got {labels.get('study_type')!r}")
+    for field_name in LIST_FIELDS:
+        value = labels.get(field_name)
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            raise DataError(f"{where}: labels.{field_name} must be a list of strings")
+
+
+def load_examples(path, limit=0):
+    """Read and validate up to `limit` examples (0 = all) from a JSONL file."""
+    if limit < 0:
+        raise ValueError("limit must be 0 (all examples) or a positive number")
     examples = []
     with open(path, encoding="utf-8") as in_file:
-        for line in in_file:
-            examples.append(json.loads(line))
+        for line_number, line in enumerate(in_file, 1):
+            if not line.strip():
+                continue
+            where = f"{path}:{line_number}"
+            try:
+                example = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise DataError(f"{where}: not valid JSON ({error.msg})") from None
+            validate_example(example, where)
+            examples.append(example)
             if limit and len(examples) >= limit:
                 break
+    if not examples:
+        raise DataError(f"{path}: no examples found")
     return examples
 
 
