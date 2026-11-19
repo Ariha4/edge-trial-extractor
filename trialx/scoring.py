@@ -66,7 +66,7 @@ def score(predictions, references):
     for field_name in LIST_FIELDS:
         counts[field_name] = {"tp": 0, "fp": 0, "fn": 0}
 
-    for raw_output, reference in zip(predictions, references):
+    for raw_output, reference in zip(predictions, references, strict=True):
         predicted, parsed_ok = parse_prediction(raw_output)
         if parsed_ok:
             valid_json_count += 1

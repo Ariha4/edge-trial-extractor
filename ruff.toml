@@ -1,0 +1,6 @@
+line-length = 120
+target-version = "py311"
+
+[lint]
+# pycodestyle, pyflakes, and bugbear: real-bug checks without style churn.
+select = ["E", "F", "W", "B"]
